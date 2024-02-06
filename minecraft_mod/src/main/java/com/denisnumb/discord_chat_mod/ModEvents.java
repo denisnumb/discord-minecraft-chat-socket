@@ -1,8 +1,10 @@
 package com.denisnumb.discord_chat_mod;
 
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.ServerChatEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -13,7 +15,7 @@ import static com.denisnumb.discord_chat_mod.DiscordChatMod.discordSocket;
 import static com.denisnumb.discord_chat_mod.DiscordChatMod.server;
 
 @Mod.EventBusSubscriber(modid = DiscordChatMod.MODID)
-public class ChatEvents {
+public class ModEvents {
     @SubscribeEvent
     public static void onChatMessage(ServerChatEvent event) throws IOException {
         discordSocket.sendMessageToDiscord(
@@ -21,7 +23,7 @@ public class ChatEvents {
                         MessageType.Message,
                         event.getPlayer().getName().getString(),
                         event.getRawText()
-                ).getJson()
+                )
         );
     }
 
@@ -35,7 +37,22 @@ public class ChatEvents {
                         MessageType.PlayerDie,
                         event.getEntity().getName().getString(),
                         event.getSource().getLocalizedDeathMessage(event.getEntity()).getString()
-                ).getJson()
+                )
+        );
+    }
+
+    @SubscribeEvent
+    public static void onAdvancementMade(AdvancementEvent.AdvancementEarnEvent event) throws IOException {
+        DisplayInfo displayInfo = event.getAdvancement().getDisplay();
+        if (displayInfo == null)
+            return;
+
+        discordSocket.sendMessageToDiscord(
+                new ChatMessage(
+                        MessageType.AdvancementMade,
+                        event.getEntity().getName().getString(),
+                        displayInfo.getTitle().getString()
+                )
         );
     }
 
@@ -63,16 +80,20 @@ public class ChatEvents {
                         messageType,
                         event.getEntity().getName().getString(),
                         message
-                ).getJson()
+                )
         );
     }
 
-    public static void sendChatMessage(String message){
+    public static void executeDiscordRequest(String request){
         if (server.getPlayerCount() == 0)
             return;
+        executeServerCommand(request);
+    }
+
+    private static void executeServerCommand(String command){
         server.getCommands().performPrefixedCommand(
                 server.createCommandSourceStack(),
-                message
+                command
         );
     }
 }

@@ -1,26 +1,30 @@
 package com.denisnumb.discord_chat_mod;
 
+import com.google.gson.GsonBuilder;
+import com.google.gson.annotations.SerializedName;
+
 enum MessageType{
-    Message, PlayerJoin, PlayerLeft, PlayerDie
+    @SerializedName("0")
+    Message,
+    @SerializedName("1")
+    PlayerJoin,
+    @SerializedName("2")
+    PlayerLeft,
+    @SerializedName("3")
+    PlayerDie,
+    @SerializedName("4")
+    AdvancementMade
 }
 
-public class ChatMessage {
-    public final String userName;
-    public final String message;
-    public final MessageType messageType;
-
-    public ChatMessage(MessageType type, String userName, String message){
-        this.messageType = type;
-        this.userName = userName;
-        this.message = message;
-    }
-
-    public String getJson(){
-        return String.format(
-                "{\"message_type\": %d, \"player_name\": \"%s\", \"message\": \"%s\"}",
-                messageType.ordinal(),
-                userName,
-                message.replace("\\", "\\\\")
-        );
+public record ChatMessage(
+        @SerializedName("message_type")
+        MessageType type,
+        @SerializedName("player_name")
+        String userName,
+        @SerializedName("message")
+        String message
+) {
+    public String getJson() {
+        return new GsonBuilder().create().toJson(this);
     }
 }

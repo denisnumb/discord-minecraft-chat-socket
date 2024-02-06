@@ -10,10 +10,11 @@ class MessageType(Enum):
 	PlayerJoin = 1
 	PlayerLeft = 2
 	PlayerDie = 3
+	AdvancementMade = 4
 
 class MinecraftMessage:
-	def __init__(self, message_type: int, player_name: str, message: str) -> None:
-		self.type = MessageType(message_type)
+	def __init__(self, message_type: str, player_name: str, message: str) -> None:
+		self.type = MessageType(int(message_type))
 		self.player_name = player_name
 		self.content = message
 
@@ -36,47 +37,58 @@ class BaseSocket:
 		receiver.send(data)
 
 class MinecraftChatClient(BaseSocket):
-	def __init__(self, ip: str, port: int, bot: discord.Bot, on_message: callable):
+	def __init__(
+		self, 
+		ip: str, 
+		port: int, 
+		bot: discord.Bot, 
+		on_message: callable
+		) -> None:
 		self.ip = ip
 		self.port = port
 		self.bot = bot
 		self.on_message = on_message
 		self.connected = False
+		self.lock = asyncio.Lock()
 
 	async def connect(self) -> None:
-		self.connected = await self.try_connect()
-		Thread(target=self.receive_minecraft_messages).start()
+		async with self.lock:
+			if not self.connected:
+				await self.try_connect()
+				Thread(target=self.receive_minecraft_messages).start()
 
 	async def try_connect(self) -> bool:
 		try:
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			print(f'Connecting to {self.ip}:{self.port}...')
+			print(f'[MinecraftChatClient] Подключение к {self.ip}:{self.port}...')
 			self.sock.connect((self.ip, self.port))
-			print(f'Connected to server [{self.ip}:{self.port}]')
-			return True
-		except:
-			print('Connection failed')
-			return False
+			print(f'[MinecraftChatClient] Подключен к серверу [{self.ip}:{self.port}]')
+			self.connected = True
+		except Exception as e:
+			print(f'[MinecraftChatClient] Не удалось подключиться к серверу: {e}')
+			self.connected = False
 
-	def close_connection(self, exception: Exception) -> None:
+	async def close_connection(self, exception: Exception) -> None:
 		if self.connected:
-			print(f'Connection lost: {exception}')
+			print(f'[MinecraftChatClient] Подключение разорвано: {exception}')
 			self.sock.close()
 			self.connected = False
 
-	async def send_message(self, message: str) -> None:
+	async def send_request(self, message: str) -> None:
 		if not self.connected:
 			return
 		try:
 			self.send(self.sock, bytes(message, 'utf-8'))
 		except Exception as e:
-			self.close_connection(e)
+			await self.close_connection(e)
 
 	def receive_minecraft_messages(self) -> None:
 		try:
 			while True:
 				raw_data = json.loads(self.receive_data(self.sock).decode('utf-8'))
-				minecraft_message = MinecraftMessage(**raw_data)
-				asyncio.run_coroutine_threadsafe(self.on_message(minecraft_message), self.bot.loop)
+				asyncio.run_coroutine_threadsafe(
+					self.on_message(MinecraftMessage(**raw_data)), 
+					self.bot.loop
+				)
 		except Exception as e:
-			self.close_connection(e)
+			asyncio.run_coroutine_threadsafe(self.close_connection(e), self.bot.loop)

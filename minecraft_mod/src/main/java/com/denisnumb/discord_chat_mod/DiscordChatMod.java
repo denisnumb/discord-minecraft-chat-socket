@@ -3,6 +3,7 @@ package com.denisnumb.discord_chat_mod;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -28,5 +29,10 @@ public class DiscordChatMod
         server = event.getServer();
         discordSocket = new DiscordSocket(Config.socketServerPort, Config.discordBotServerIp);
         discordSocket.start();
+    }
+
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) throws IOException {
+        discordSocket.close();
     }
 }
