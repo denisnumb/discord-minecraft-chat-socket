@@ -19,7 +19,7 @@
 pip install py-cord
 ```
 4. Запустите сервер с установленным модом, чтобы в директории сервера сгенерировался конфигурационный файл мода
-5. Создайте бота и укажите все необходимые параметры в файле `discord_bot/config.py`
+5. [Создайте бота][3] и укажите все необходимые параметры в файле `discord_bot/config.py`
 
 Если вы запускаете бота и сервер на одном устройстве, то конфигурационные данные IP-адресов можно не трогать (оставить `127.0.0.1`). 
 
@@ -32,3 +32,4 @@ pip install py-cord
 
 [1]: https://github.com/denisnumb/discord-minecraft-chat/releases
 [2]: https://www.python.org/downloads/
+[3]: https://discord.com/developers/docs/getting-started
