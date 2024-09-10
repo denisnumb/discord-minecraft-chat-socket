@@ -3,8 +3,11 @@ import discord
 from discord.ext import tasks
 from model import (
     MinecraftChatClient, 
-    MinecraftMessage, 
-    MessageType
+    MinecraftMessage,
+    MessageType,
+    MentionData,
+    parse_markdown,
+    convert_tokens_to_json
 )
 from config import (
     token,
@@ -45,8 +48,10 @@ async def connect_to_minecraft_chat() -> None:
 async def on_message(message: discord.Message) -> None:
     if (message.channel != minecraft_channel or message.author == bot.user):
         return
+
     if chat_client.connected:
-        await chat_client.send_request(prepare_tellraw_command(message))
+        for command in prepare_tellraw_commands(message):
+            await chat_client.send_request(command)
 
 
 async def on_minecraft_message(message: MinecraftMessage) -> None:
@@ -80,28 +85,58 @@ async def on_minecraft_message(message: MinecraftMessage) -> None:
             )
         ) 
 
-def prepare_tellraw_command(message: discord.Message) -> str:
-    username = message.author.nick or message.author.name
+def prepare_tellraw_commands(message: discord.Message) -> list[str]:
+    result = []
+    
+    user_name = message.author.nick or message.author.name
     role_color = str(message.author.top_role.color)
 
-    message_content = message.content or '*файл*'
-    italic = not message.content
-    is_url = message_content.startswith('http')
-    content_color = 'aqua' if is_url else 'white'
-
-    data = [
+    base_part = [
         '',
         {'text': '[discord]', 'bold': True, 'color': '#F1C40F'},
-        {'text': ' <', 'color': 'white'},
-        {'text': username, 'color': role_color},
-        {'text': '> ', 'color': 'white'},
-        {'text': message_content, 'color': content_color, 'italic': italic}
+        {'text': ' <'},
+        {'text': user_name, 'color': role_color},
+        {'text': '> '}
     ]
 
-    if is_url:
-        data[-1]['clickEvent'] = {'action': 'open_url', 'value': message_content}
+    if message.content:
+        mentions = {member.mention: MentionData(member) for member in message.mentions}
+        mentions.update({role.mention: MentionData(role) for role in message.role_mentions})
+        mentions.update({channel.mention: MentionData(channel) for channel in message.channel_mentions})
 
-    return '/tellraw @a ' + json.dumps(data, ensure_ascii=False)
+        try:
+            text_part = convert_tokens_to_json(parse_markdown(message.content))
+            
+            for mention, object in mentions.items():
+                for part in text_part:
+                    if part['text'] == mention:
+                        part['text'] = object.pretty_mention
+                        part['color'] = part.get('color') or object.color
+        except:
+            for mention, object in mentions.items():
+                message.content = message.content.replace(mention, f'@{object.name}')
+            text_part = [{'text': message.content}]
+
+        result.append('/tellraw @a ' + json.dumps(base_part + text_part, ensure_ascii=False))
+    
+    if (attachments := message.attachments):
+        attachment_part = [
+            {
+                'text': file.filename + ('\n' if index < len(attachments) else ''), 
+                'italic': True, 
+                'color': 'aqua',
+                'clickEvent': {'action': 'open_url', 'value': file.url},
+                'hoverEvent': {'action': 'show_text', 'value': file.url}
+            } 
+            for index, file in enumerate(attachments, 1)
+        ]
+        result.append('/tellraw @a ' + json.dumps(base_part + attachment_part, ensure_ascii=False))
+
+    if (stickers := message.stickers):
+        sticker_part = [{'text': f'*стикер* ({stickers[0].name})', 'italic': True}]
+        result.append('/tellraw @a ' + json.dumps(base_part + sticker_part, ensure_ascii=False))
+
+    return result
 
 
 bot.run(token)
