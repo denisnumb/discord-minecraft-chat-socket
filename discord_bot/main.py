@@ -105,13 +105,7 @@ def prepare_tellraw_commands(message: discord.Message) -> list[str]:
         mentions.update({channel.mention: MentionData(channel) for channel in message.channel_mentions})
 
         try:
-            text_part = convert_tokens_to_json(parse_markdown(message.content))
-            
-            for mention, object in mentions.items():
-                for part in text_part:
-                    if part['text'] == mention:
-                        part['text'] = object.pretty_mention
-                        part['color'] = part.get('color') or object.color
+            text_part = convert_tokens_to_json(parse_markdown(message.content), mentions)
         except:
             for mention, object in mentions.items():
                 message.content = message.content.replace(mention, f'@{object.name}')

@@ -271,11 +271,16 @@ def parse_markdown(raw_text: str) -> list[MarkdownToken]:
 	return tokens
 
 
-def convert_tokens_to_json(tokens: list[MarkdownToken]) -> list[dict]:
+def convert_tokens_to_json(tokens: list[MarkdownToken], mentions: dict[str, MentionData]={}) -> list[dict]:
 	result = []
 
 	def add_part(token: MarkdownToken, text_part: str) -> None:
 		part = {'text': text_part}
+
+		if text_part in mentions:
+			part['text'] = mentions[text_part].pretty_mention
+			part['color'] = mentions[text_part].color
+			text_part = part['text']
 
 		if text_part.strip():
 			for attr in ('bold', 'italic', 'strikethrough', 'underlined', 'obfuscated'):
@@ -283,12 +288,12 @@ def convert_tokens_to_json(tokens: list[MarkdownToken]) -> list[dict]:
 					part[attr] = value
 
 			if token.obfuscated:
-				part['hoverEvent'] = {'action': 'show_text', 'value': token.text}
+				part['hoverEvent'] = {'action': 'show_text', 'value': text_part}
 
 			if token.is_url:
 				part['color'] = 'aqua'
 				part['clickEvent'] = {'action': 'open_url', 'value': token.url}
-				hover_value = token.url if not token.obfuscated else f'{token.text} ({token.url})'
+				hover_value = token.url if not token.obfuscated else f'{text_part} ({token.url})'
 				part['hoverEvent'] = {'action': 'show_text', 'value': hover_value}
 
 		result.append(part)
