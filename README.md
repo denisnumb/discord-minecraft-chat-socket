@@ -1,8 +1,8 @@
-# discord-minecraft-chat
+# discord-minecraft-chat-socket
 
 Мод для MineCraft `1.20.1`, реализующий объединение чата MineCraft с каналом Discord-сервера в один общий чат.
 
-![1](https://github.com/denisnumb/discord-minecraft-chat/assets/61795655/33ec8918-5722-4b78-8e2a-f0da21900829)
+![1](https://github.com/denisnumb/discord-minecraft-chat-socket/assets/61795655/33ec8918-5722-4b78-8e2a-f0da21900829)
 
 В директории `minecraft_mod` расположен исходный код мода, позволяющего обмениваться сообщениями с Discord-каналом.
 
