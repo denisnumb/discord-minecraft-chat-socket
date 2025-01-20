@@ -1,4 +1,4 @@
-package com.denisnumb.discord_chat_mod;
+package com.denisnumb.minecraft_socket_mod;
 
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.world.entity.player.Player;
@@ -11,14 +11,14 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.io.IOException;
 
-import static com.denisnumb.discord_chat_mod.DiscordChatMod.discordSocket;
-import static com.denisnumb.discord_chat_mod.DiscordChatMod.server;
+import static com.denisnumb.minecraft_socket_mod.MinecraftSocketMod.serverSocket;
+import static com.denisnumb.minecraft_socket_mod.MinecraftSocketMod.server;
 
-@Mod.EventBusSubscriber(modid = DiscordChatMod.MODID)
+@Mod.EventBusSubscriber(modid = MinecraftSocketMod.MODID)
 public class ModEvents {
     @SubscribeEvent
     public static void onChatMessage(ServerChatEvent event) throws IOException {
-        discordSocket.sendMessageToDiscord(
+        serverSocket.sendMessageToClient(
                 new ChatMessage(
                         MessageType.Message,
                         event.getPlayer().getName().getString(),
@@ -32,7 +32,7 @@ public class ModEvents {
         if (!(event.getEntity() instanceof Player))
             return;
 
-        discordSocket.sendMessageToDiscord(
+        serverSocket.sendMessageToClient(
                 new ChatMessage(
                         MessageType.PlayerDie,
                         event.getEntity().getName().getString(),
@@ -47,7 +47,7 @@ public class ModEvents {
         if (displayInfo == null)
             return;
 
-        discordSocket.sendMessageToDiscord(
+        serverSocket.sendMessageToClient(
                 new ChatMessage(
                         MessageType.AdvancementMade,
                         event.getEntity().getName().getString(),
@@ -75,7 +75,7 @@ public class ModEvents {
                 ? MessageType.PlayerJoin
                 : MessageType.PlayerLeft;
 
-        discordSocket.sendMessageToDiscord(
+        serverSocket.sendMessageToClient(
                 new ChatMessage(
                         messageType,
                         event.getEntity().getName().getString(),
@@ -84,7 +84,7 @@ public class ModEvents {
         );
     }
 
-    public static void executeDiscordRequest(String request){
+    public static void executeRequest(String request){
         if (server.getPlayerCount() == 0)
             return;
         executeServerCommand(request);

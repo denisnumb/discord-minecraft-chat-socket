@@ -1,4 +1,4 @@
-package com.denisnumb.discord_chat_mod;
+package com.denisnumb.minecraft_socket_mod;
 
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -6,32 +6,31 @@ import org.slf4j.Logger;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public class DiscordSocket extends BaseSocket {
+public class ServerSocket extends BaseSocket {
     private DataInputStream in;
     private DataOutputStream out;
-    private Socket discordBot;
-    private boolean discordBotConnected = false;
+    private Socket client;
+    private boolean isClientConnected = false;
     private boolean listen = true;
-    private final ServerSocket receiver;
-    private final String discordBotServerIp;
+    private final java.net.ServerSocket receiver;
+    private final String clientIp;
     private final Logger LOGGER = LogUtils.getLogger();
 
-    public DiscordSocket(int port, String discordBotServerIp) throws IOException {
-        receiver = new ServerSocket(port);
-        this.discordBotServerIp = discordBotServerIp;
-        LOGGER.info("DiscordSocket Initialized");
+    public ServerSocket(int port, String clientIp) throws IOException {
+        receiver = new java.net.ServerSocket(port);
+        this.clientIp = clientIp;
+        LOGGER.info("ServerSocket Initialized");
     }
 
     public void start() {
         new Thread(() -> {
             try {
-                waitDiscordBot();
+                waitClient();
             } catch (IOException ignored) {}
         }).start();
     }
@@ -39,58 +38,58 @@ public class DiscordSocket extends BaseSocket {
     public void close() throws IOException {
         listen = false;
         receiver.close();
-        closeDiscordBotConnection();
+        closeClientConnection();
     }
 
-    private void waitDiscordBot() throws IOException {
-        discordBotConnected = acceptSender();
-        if (!discordBotConnected)
-            waitDiscordBot();
-        in = new DataInputStream(discordBot.getInputStream());
-        out = new DataOutputStream(discordBot.getOutputStream());
-        LOGGER.info("Discord Bot Connected: " + discordBot.toString());
-        receiveDiscordRequests();
+    private void waitClient() throws IOException {
+        isClientConnected = acceptSender();
+        if (!isClientConnected)
+            waitClient();
+        in = new DataInputStream(client.getInputStream());
+        out = new DataOutputStream(client.getOutputStream());
+        LOGGER.info("Client Connected: " + client.toString());
+        receiveRequests();
     }
 
     private boolean acceptSender() throws IOException {
         Socket client = receiver.accept();
 
-        if (!client.getInetAddress().getHostAddress().equals(discordBotServerIp)){
+        if (!client.getInetAddress().getHostAddress().equals(clientIp)){
             LOGGER.warn("An attempt was made to connect from an invalid address: " + client);
             client.close();
             return false;
         }
-        discordBot = client;
+        this.client = client;
         return true;
     }
 
-    private void closeDiscordBotConnection() throws IOException {
-        if (discordBotConnected){
-            discordBot.close();
-            LOGGER.warn("Discord Bot Disconnected");
-            discordBotConnected = false;
+    private void closeClientConnection() throws IOException {
+        if (isClientConnected){
+            client.close();
+            LOGGER.warn("Client Disconnected");
+            isClientConnected = false;
             if (listen)
-                waitDiscordBot();
+                waitClient();
         }
     }
 
-    private void receiveDiscordRequests() throws IOException {
+    private void receiveRequests() throws IOException {
         while (listen) {
             try {
-                ModEvents.executeDiscordRequest(new String(receiveData(in), StandardCharsets.UTF_8));
+                ModEvents.executeRequest(new String(receiveData(in), StandardCharsets.UTF_8));
             } catch (Exception e){
-                closeDiscordBotConnection();
+                closeClientConnection();
             }
         }
     }
 
-    public void sendMessageToDiscord(ChatMessage message) throws IOException {
-        if (!discordBotConnected)
+    public void sendMessageToClient(ChatMessage message) throws IOException {
+        if (!isClientConnected)
             return;
         try {
             sendData(out, message.getJson().getBytes(StandardCharsets.UTF_8));
         } catch (SocketException e){
-            closeDiscordBotConnection();
+            closeClientConnection();
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.denisnumb.discord_chat_mod;
+package com.denisnumb.minecraft_socket_mod;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;

@@ -1,4 +1,4 @@
-package com.denisnumb.discord_chat_mod;
+package com.denisnumb.minecraft_socket_mod;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
@@ -11,14 +11,14 @@ import net.minecraftforge.fml.config.ModConfig;
 
 import java.io.IOException;
 
-@Mod(DiscordChatMod.MODID)
-public class DiscordChatMod
+@Mod(MinecraftSocketMod.MODID)
+public class MinecraftSocketMod
 {
-    public static final String MODID = "discord_chat_mod";
+    public static final String MODID = "minecraft_socket_mod";
     public static MinecraftServer server;
-    public static DiscordSocket discordSocket;
+    public static ServerSocket serverSocket;
 
-    public DiscordChatMod()
+    public MinecraftSocketMod()
     {
         MinecraftForge.EVENT_BUS.register(this);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -27,12 +27,12 @@ public class DiscordChatMod
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) throws IOException {
         server = event.getServer();
-        discordSocket = new DiscordSocket(Config.socketServerPort, Config.discordBotServerIp);
-        discordSocket.start();
+        serverSocket = new ServerSocket(Config.socketServerPort, Config.clientIp);
+        serverSocket.start();
     }
 
     @SubscribeEvent
     public void onServerStopped(ServerStoppedEvent event) throws IOException {
-        discordSocket.close();
+        serverSocket.close();
     }
 }
