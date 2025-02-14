@@ -2,19 +2,19 @@ package com.denisnumb.minecraft_socket_mod;
 
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.AdvancementEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.io.IOException;
 
 import static com.denisnumb.minecraft_socket_mod.MinecraftSocketMod.serverSocket;
 import static com.denisnumb.minecraft_socket_mod.MinecraftSocketMod.server;
 
-@Mod.EventBusSubscriber(modid = MinecraftSocketMod.MODID)
+@EventBusSubscriber(modid = MinecraftSocketMod.MODID)
 public class ModEvents {
     @SubscribeEvent
     public static void onChatMessage(ServerChatEvent event) throws IOException {
@@ -43,10 +43,10 @@ public class ModEvents {
 
     @SubscribeEvent
     public static void onAdvancementMade(AdvancementEvent.AdvancementEarnEvent event) throws IOException {
-        DisplayInfo displayInfo = event.getAdvancement().getDisplay();
-        if (displayInfo == null)
+        if (event.getAdvancement().value().display().isEmpty())
             return;
 
+        DisplayInfo displayInfo = event.getAdvancement().value().display().get();
         serverSocket.sendMessageToClient(
                 new ChatMessage(
                         MessageType.AdvancementMade,
